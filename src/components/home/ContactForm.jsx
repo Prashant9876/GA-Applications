@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Aos from 'aos';
 import 'aos/dist/aos.css';
+import emailjs from '@emailjs/browser';
 
 function ContactForm() {
     const [formData, setFormData] = useState({
@@ -10,6 +11,8 @@ function ContactForm() {
         message: "",
     });
     const [errors, setErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
 
     useEffect(() => {
         Aos.init({ duration: 1000 });
@@ -39,41 +42,69 @@ function ContactForm() {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (validateForm()) {
-            alert("Form submitted successfully");
-        }
+        if (!validateForm()) return;
+
+        setIsSubmitting(true);
+        setSuccessMessage("");
+
+        const emailParams = {
+            from_name: formData.name,
+            from_email: formData.email,
+            message: formData.message,
+        };
+
+        emailjs.send(
+            import.meta.env.VITE_EMAILJS_SERVICE_ID,
+            import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+            emailParams,
+            import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+            // import.meta.env.VITE_EMAILJS_USER_ID
+        )
+        .then((response) => {
+            console.log("Email sent successfully!", response);
+            setSuccessMessage("Your message has been sent successfully!");
+            setFormData({ name: "", email: "", message: "" });
+        })
+        .catch((error) => {
+            console.error("Failed to send email:", error);
+        })
+        .finally(() => {
+            setIsSubmitting(false);
+        });
     };
 
     return (
         <div className="max-w-[1320px] px-4 mx-auto flex flex-col items-center py-14 md:py-16 lg:py-20">
-            {/* Main Heading */}
             <h2 data-aos="fade-up" className="text-green-500 font-bold text-4xl md:text-5xl lg:text-6xl mb-8 md:mb-10 lg:mb-12 font-serif">
                 Contact
             </h2>
 
             <div className="flex flex-col md:flex-row gap-12 md:gap-6 lg:gap-12 max-w-4xl w-full">
-                {/* Left Section: Contact Details */}
+                {/* Contact Details Section */}
                 <div data-aos="fade-right" className="bg-green-500 text-white p-6 rounded-lg flex-1">
                     <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-8 font-serif">Contact Us</h3>
                     <div className="mb-6">
-                        <h3 className="text-lg md:text-2xl  font-bold font-mono text-[#1E71FF]">Reach Us</h3>
-                        <Link to={"/"} className='text-base mt-2 block  font-medium font-mono'>Home@gaapplications.com</Link>
+                        <h3 className="text-lg md:text-2xl font-bold font-mono text-[#1E71FF]">Reach Us</h3>
+                        <Link to={"/"} className='text-base mt-2 block font-medium font-mono'>Home@gaapplications.com</Link>
                     </div>
                     <div className="mb-6">
                         <h3 className="text-lg md:text-xl font-bold font-mono text-[#1E71FF]">Call</h3>
-                        <Link to={"/"} className=' text-base  font-medium font-mono  mt-2 block'>+91 8340291901</Link>
+                        <Link to={"/"} className='text-base font-medium font-mono mt-2 block'>+91 8340291901</Link>
                     </div>
                     <div>
-                        <h3 className="text-lg md:text-xl  font-bold font-mono text-[#1E71FF]">Visit Us</h3>
-                        <p className='text-base mt-2 block  font-medium font-mono '>
+                        <h3 className="text-lg md:text-xl font-bold font-mono text-[#1E71FF]">Visit Us</h3>
+                        <p className='text-base mt-2 block font-medium font-mono '>
                             24, A Block, Defence Colony, <span className='block'>Hisar, Haryana 125001</span>
                         </p>
                     </div>
                 </div>
 
-                {/* Right Section: Contact Form */}
+                {/* Contact Form Section */}
                 <div data-aos="fade-left" className="bg-green-500 text-white p-6 rounded-lg flex-1">
                     <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-center mb-8 font-serif">Get in Touch</h3>
+                    
+                    {successMessage && <p className="text-green-300 text-center mb-4">{successMessage}</p>}
+
                     <form className="space-y-3" onSubmit={handleSubmit}>
                         <div>
                             <label htmlFor="name" className="block text-lg md:text-xl pb-1 font-bold font-mono text-white">Name</label>
@@ -111,11 +142,11 @@ function ContactForm() {
                             {errors.message && <p className="text-red-700 text-sm pt-0.5">{errors.message}</p>}
                         </div>
                         <button
-                            data-aos="fade-left"
                             type="submit"
+                            disabled={isSubmitting}
                             className="w-full bg-blue-600 hover:bg-pink-600 text-white font-bold py-2 rounded-md transition duration-300 font-mono"
                         >
-                            Submit
+                            {isSubmitting ? "Sending..." : "Submit"}
                         </button>
                     </form>
                 </div>
